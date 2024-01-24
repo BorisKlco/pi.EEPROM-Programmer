@@ -1,36 +1,6 @@
 import RPi.GPIO as GPIO
 import time
 
-GPIO_PINS = [
-    2,
-    3,
-    4,
-    17,
-    27,
-    22,
-    10,
-    9,
-    11,
-    0,
-    5,
-    6,
-    13,
-    19,
-    26,
-    14,
-    15,
-    18,
-    23,
-    24,
-    25,
-    8,
-    7,
-    1,
-    12,
-    16,
-    20,
-    21,
-]
 # -------
 # A10-A0 - was build for 28C16 EEPROM with 10 address inputs.
 # by inserting GPIO num for A14-A11 to front of ADDR_PIN[]
@@ -66,21 +36,8 @@ WRITE_DATA = [
 GPIO.setmode(GPIO.BCM)
 
 
-# --------May the Force be with you--------#
-# ---- Ben Eater Our Lord and Savior 🙏----#
-def cleaning():
-    print("cleaning...")
-    pins = []
-    for pin in GPIO_PINS:
-        try:
-            GPIO.setup(pin, GPIO.OUT)
-            GPIO.output(pin, 0)
-            pins.append(pin)
-            time.sleep(0.0001)
-        except:
-            pass
-    print("Done... pins:", pins)
-    # -------
+# --------May the Force be with you------#
+# ---- Ben Eater Our Lord and Savior 🙏--#
 
 
 def setAddress(addr):
@@ -120,7 +77,7 @@ def read(addr):
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, BYTE_ADDR[i])
 
-    time.sleep(0.01)
+    time.sleep(0.001)
 
     for pin in DATA_PIN:
         GPIO.setup(pin, GPIO.IN)
@@ -129,7 +86,7 @@ def read(addr):
     for pin in DATA_PIN:
         BYTE_DATA.append(GPIO.input(pin))
 
-    time.sleep(0.01)
+    time.sleep(0.001)
 
     return BYTE_DATA
 
@@ -157,13 +114,12 @@ def write(addr, data):
     time.sleep(0.01)
 
 
-# --------May the Force be with you--------#
-# ---- Ben Eater Our Lord and Savior 🙏----#
+# --------May the Force be with you------#
+# ---- Ben Eater Our Lord and Savior 🙏--#
 def printContents():
     for base in range(0, 256, 16):
         data = [0] * 16
         for offset in range(0, 16):
-            time.sleep(0.0001)
             result = read(base + offset)
             rep = 0
             for num in result:
@@ -192,7 +148,7 @@ def printContents():
             )
         )
         print(buf)
-    time.sleep(0.01)
+    time.sleep(0.1)
 
 
 def prog(start_addr):
@@ -200,14 +156,14 @@ def prog(start_addr):
     for addr, data in enumerate(WRITE_DATA):
         write(start_addr + addr, data)
     print("Done...")
-    time.sleep(0.01)
+    time.sleep(0.1)
 
 
-# --------May the Force be with you--------#
-# ---- Ben Eater Our Lord and Savior 🙏----#
+# --------May the Force be with you------#
+# ---- Ben Eater Our Lord and Savior 🙏--#
 
-prog(0)
+# prog(0)
 printContents()
 
-# cleaning()
+# ---🧹---#
 GPIO.cleanup()
