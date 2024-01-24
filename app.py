@@ -33,7 +33,7 @@ GPIO_PINS = [
 ]
 # -------
 # A10-A0 - was build for 28C16 EEPROM with 10 address inputs.
-# by inserting GPIO num for A11-A14 to front of ADDR_PIN[]
+# by inserting GPIO num for A14-A11 to front of ADDR_PIN[]
 # script should work for bigger 28C models.
 ADDR_PIN = [16, 12, 26, 19, 13, 6, 5, 0, 11, 9, 10]
 EEPROM_SIZE = len(ADDR_PIN)
@@ -44,7 +44,23 @@ DATA_PIN = [7, 8, 25, 24, 23, 22, 27, 17]
 WE = 20
 OE = 21
 # -------
-WRITE_DATA = []
+WRITE_DATA = [
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+]
 # -------
 GPIO.setmode(GPIO.BCM)
 
@@ -103,9 +119,13 @@ def read(addr):
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, BYTE_ADDR[i])
 
+    time.sleep(0.0001)
+
     for pin in DATA_PIN:
         GPIO.setup(pin, GPIO.IN)
         BYTE_DATA.append(GPIO.input(pin))
+
+    time.sleep(0.01)
 
     return BYTE_DATA
 
@@ -126,10 +146,9 @@ def write(addr, data):
         GPIO.output(pin, BYTE_DATA[i])
 
     time.sleep(0.001)
-
     GPIO.output(WE, 0)
     # 1k ns
-    time.sleep(0.000001)
+    time.sleep(0.00001)
     GPIO.output(WE, 1)
     time.sleep(0.01)
 
@@ -140,7 +159,7 @@ def printContents():
     for base in range(0, 256, 16):
         data = [0] * 16
         for offset in range(0, 16):
-            result = setData(base + offset)
+            result = read(base + offset)
             rep = 0
             for num in result:
                 rep = (rep << 1) + num
@@ -174,6 +193,7 @@ def printContents():
 def prog(start_addr):
     print("Writing data to addr", start_addr, "\n")
     for addr, data in enumerate(WRITE_DATA):
+        print(addr, data)
         write(start_addr + addr, data)
     print("Done...")
     time.sleep(0.01)
@@ -181,6 +201,7 @@ def prog(start_addr):
 
 # --------May the Force be with you--------#
 # ---- Ben Eater Our Lord and Savior 🙏----#
+
 printContents()
 cleaning()
 GPIO.cleanup()
