@@ -45,21 +45,22 @@ WE = 20
 OE = 21
 # -------
 WRITE_DATA = [
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
-    0xFF,
+    0x81,
+    0xCF,
+    0x92,
+    0x86,
+    0xCC,
+    0xA4,
+    0xA0,
+    0x8F,
+    0x80,
+    0x84,
+    0x88,
+    0xE0,
+    0xB1,
+    0xC2,
+    0xB0,
+    0xB8,
 ]
 # -------
 GPIO.setmode(GPIO.BCM)
@@ -119,10 +120,13 @@ def read(addr):
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, BYTE_ADDR[i])
 
-    time.sleep(0.0001)
+    time.sleep(0.01)
 
     for pin in DATA_PIN:
         GPIO.setup(pin, GPIO.IN)
+    time.sleep(0.001)
+
+    for pin in DATA_PIN:
         BYTE_DATA.append(GPIO.input(pin))
 
     time.sleep(0.01)
@@ -148,7 +152,7 @@ def write(addr, data):
     time.sleep(0.001)
     GPIO.output(WE, 0)
     # 1k ns
-    time.sleep(0.00001)
+    time.sleep(0.000001)
     GPIO.output(WE, 1)
     time.sleep(0.01)
 
@@ -159,6 +163,7 @@ def printContents():
     for base in range(0, 256, 16):
         data = [0] * 16
         for offset in range(0, 16):
+            time.sleep(0.0001)
             result = read(base + offset)
             rep = 0
             for num in result:
@@ -193,7 +198,6 @@ def printContents():
 def prog(start_addr):
     print("Writing data to addr", start_addr, "\n")
     for addr, data in enumerate(WRITE_DATA):
-        print(addr, data)
         write(start_addr + addr, data)
     print("Done...")
     time.sleep(0.01)
@@ -202,6 +206,8 @@ def prog(start_addr):
 # --------May the Force be with you--------#
 # ---- Ben Eater Our Lord and Savior 🙏----#
 
+prog(0)
 printContents()
-cleaning()
+
+# cleaning()
 GPIO.cleanup()
