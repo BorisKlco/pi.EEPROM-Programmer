@@ -5,32 +5,32 @@ import time
 # A10-A0 - was build for 28C16 EEPROM with 10 address inputs.
 # by inserting GPIO num for A14-A11 to front of ADDR_PIN[]
 # script should work for bigger 28C models.
-ADDR_PIN = [16, 12, 26, 19, 13, 6, 5, 0, 11, 9, 10]
+ADDR_PIN = [26, 19, 13, 6, 5, 0, 11, 9, 10, 22]
 EEPROM_SIZE = len(ADDR_PIN)
 # -------
 # D7-D0 (I/O)
-DATA_PIN = [7, 8, 25, 24, 23, 22, 27, 17]
+DATA_PIN = [21, 20, 16, 12, 1, 7, 8, 25]
 # -------
-WE = 20
-OE = 21
+WE = 2
+OE = 3
 # -------
 WRITE_DATA = [
-    0x81,
-    0xCF,
-    0x92,
-    0x86,
-    0xCC,
-    0xA4,
-    0xA0,
-    0x8F,
-    0x80,
-    0x84,
-    0x88,
-    0xE0,
-    0xB1,
-    0xC2,
-    0xB0,
-    0xB8,
+    0x7E,
+    0x30,
+    0x6D,
+    0x79,
+    0x33,
+    0x5B,
+    0x5F,
+    0x70,
+    0x7F,
+    0x7B,
+    0x77,
+    0x1F,
+    0x4E,
+    0x3D,
+    0x4F,
+    0x47,
 ]
 # -------
 GPIO.setmode(GPIO.BCM)
@@ -117,7 +117,7 @@ def write(addr, data):
 # --------May the Force be with you------#
 # ---- Ben Eater Our Lord and Savior 🙏--#
 def printContents():
-    for base in range(0, 256, 16):
+    for base in range(0, 2048, 16):
         data = [0] * 16
         for offset in range(0, 16):
             result = read(base + offset)
@@ -163,7 +163,47 @@ def prog(start_addr):
 # ---- Ben Eater Our Lord and Savior 🙏--#
 
 # prog(0)
+# printContents()
+
+
+def multiplexed():
+    digits = [0x7E, 0x30, 0x6D, 0x79, 0x33, 0x5B, 0x5F, 0x70, 0x7F, 0x7B]
+
+    print("Ones place")
+    for i in range(256):
+        write(i, digits[i % 10])
+    print("Tens place")
+    for i in range(256):
+        write(i + 256, digits[(i // 10) % 10])
+    print("Hundreds place")
+    for i in range(256):
+        write(i + 512, digits[(i // 100) % 10])
+    print("Sign place")
+    for i in range(256):
+        write(i + 768, 0)
+
+    print("Ones place - two complenet")
+    for i in range(-128, 128):
+        write(i + 128 + 1024, digits[abs(i) % 10])
+    print("Tens place - two complenet")
+    for i in range(-128, 128):
+        write(i + 128 + 1280, digits[abs(i // 10) % 10])
+    print("Hundreds place-  two complenet")
+    for i in range(-128, 128):
+        write(i + 128 + 1536, digits[abs(i // 100) % 10])
+    print("Sign place - two complenet")
+    for i in range(-128, 128):
+        if i < 0:
+            write(i + 128 + 1792, 0x01)
+        else:
+            write(i + 128 + 1792, 0x00)
+
+
 printContents()
+# multiplexed()
+
+# for i in range(2048):
+#     write(i, 0xFF)
 
 # ---🧹---#
 GPIO.cleanup()
