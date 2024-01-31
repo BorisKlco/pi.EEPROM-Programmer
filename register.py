@@ -25,7 +25,7 @@ S_SRCLK = 14
 
 def setAddr(addr, enableOutput):
     ##Set OE on EEPROM - Active Low
-    wiringpi.digitalWrite(E_OE, enableOutput)
+    wiringpi.pinMode(E_OE, enableOutput)
     ##Shift data - Data, Clock, MSBFIRST, ADDR
     wiringpi.shiftOut(S_DATA, S_SRCLK, 1, (addr >> 8))
     wiringpi.shiftOut(S_DATA, S_SRCLK, 1, (addr & 255))
@@ -36,7 +36,7 @@ def setAddr(addr, enableOutput):
 
 
 def read(addr):
-    setAddr(addr, 0)
+    setAddr(int(addr), 0)
     for pin in E_DATA:
         wiringpi.pinMode(pin, INPUT)
     data = 0
@@ -47,7 +47,7 @@ def read(addr):
 
 
 def write(addr, data):
-    setAddr(addr, 1)
+    setAddr(int(addr), 1)
     for pin in E_DATA:
         wiringpi.pinMode(pin, OUTPUT)
     for pin in E_DATA:
@@ -68,6 +68,7 @@ def printEE(sectors=1):
         for base in range(256 * sector, 256 * (sector + 1), 16):
             data = [0] * 16
             for offset in range(16):
+                data[offset] = read(base+offset)
                 buf = (
                     "%03x: %02x %02x %02x %02x %02x %02x %02x %02x   %02x %02x %02x %02x %02x %02x %02x %02x"
                     % (
@@ -135,21 +136,36 @@ def ask_instructions():
         ),
     ]
     instructions = inquirer.prompt(begin_instructions)
+    begin = instructions["begin"]
 
-    match instructions["begin"]:
-        case "Predefined":
-            multiplexed()
-        case "Read":
-            ask_read_instructions()
-        case "Write":
-            ask_write_instructions()
-        case "Erase":
-            print("Erasing...")
-            for addr in range(2048):
-                write(addr, 0xFF)
-            print("done...")
-        case "Quit":
-            sys.exit("\nBye!")
+    if begin == "Predefined":
+        multiplexed()
+    elif begin == "Read":
+        ask_read_instructions()
+    elif begin == "Write":
+        ask_write_instructions()
+    elif begin == "Erase":
+        print("Erasing...")
+        for addr in range(2048):
+            write(addr, 0xFF)
+        print("done...")
+    elif begin == "Quit":
+        sys.exit("\nBye!")
+
+    # match instructions["begin"]:
+    #     case "Predefined":
+    #         multiplexed()
+    #     case "Read":
+    #         ask_read_instructions()
+    #     case "Write":
+    #         ask_write_instructions()
+    #     case "Erase":
+    #         print("Erasing...")
+    #         for addr in range(2048):
+    #             write(addr, 0xFF)
+    #         print("done...")
+    #     case "Quit":
+    #         sys.exit("\nBye!")
 
 
 def ask_read_instructions():
@@ -166,27 +182,48 @@ def ask_read_instructions():
         inquirer.Text("sectors", message="How many sectors of 256? (8 is 2048)")
     ]
     read_instructions = inquirer.prompt(picking_read)
+    read_picking = read_instructions["picking_read"]
 
-    match read_instructions["picking_read"]:
-        case "Read address":
-            read_addr_answer = inquirer.prompt(asking_addr)
-            print(
-                "Data for",
-                read_addr_answer["addr"],
-                "-",
-                read(read_addr_answer["addr"]),
-            )
-            print("done...")
-        case "Read sector":
-            read_sector_answer = inquirer.prompt(asking_sectors)
-            printEE(read_sector_answer["sectors"])
-            print("done...")
-        case "Read All":
-            print("Reading EEPROM....")
-            printEE(8)
-            print("done...")
-        case "Back":
-            ask_instructions()
+    if read_picking == "Read address":
+        read_addr_answer = inquirer.prompt(asking_addr)
+        print(
+            "Data for",
+            read_addr_answer["addr"],
+            "-",
+            read(read_addr_answer["addr"]),
+        )
+        print("done...")
+    elif read_picking == "Read sector":
+        read_sector_answer = inquirer.prompt(asking_sectors)
+        printEE(read_sector_answer["sectors"])
+        print("done...")
+    elif read_picking == "Read All":
+        print("Reading EEPROM....")
+        printEE(8)
+        print("done...")
+    elif read_picking == "Back":
+        ask_instructions()
+
+    # match read_instructions["picking_read"]:
+    #     case "Read address":
+    #         read_addr_answer = inquirer.prompt(asking_addr)
+    #         print(
+    #             "Data for",
+    #             read_addr_answer["addr"],
+    #             "-",
+    #             read(read_addr_answer["addr"]),
+    #         )
+    #         print("done...")
+    #     case "Read sector":
+    #         read_sector_answer = inquirer.prompt(asking_sectors)
+    #         printEE(read_sector_answer["sectors"])
+    #         print("done...")
+    #     case "Read All":
+    #         print("Reading EEPROM....")
+    #         printEE(8)
+    #         print("done...")
+    #     case "Back":
+    #         ask_instructions()
 
 
 def ask_write_instructions():
@@ -204,29 +241,44 @@ def ask_write_instructions():
     ]
     write_instructions = inquirer.prompt(picking_write)
 
-    match write_instructions["picking_write"]:
-        case "Predefined data":
-            print("Writing predefined data...")
-            for addr, data in enumerate(CUSTOM_DATA):
-                write(addr, data)
-            print("done...")
-        case "Write custom data":
-            write_answer = inquirer.prompt(asking_to_write)
-            print("Writing to", write_answer["addr"], "data", write_answer["data"])
-            write(write_answer["addr"], write_answer["data"])
-            print("done...")
-        case "Back":
-            ask_instructions()
+    write_picking = write_instructions["picking_write"]
+
+    if write_picking == "Predefined data":
+        print("Writing predefined data...")
+        for addr, data in enumerate(CUSTOM_DATA):
+            write(addr, data)
+        print("done...")
+    elif write_picking == "Write custom data":
+        write_answer = inquirer.prompt(asking_to_write)
+        print("Writing to", write_answer["addr"], "data", write_answer["data"])
+        write(write_answer["addr"], write_answer["data"])
+        print("done...")
+    elif write_picking == "Back":
+        ask_instructions()
+
+    # match write_instructions["picking_write"]:
+    #     case "Predefined data":
+    #         print("Writing predefined data...")
+    #         for addr, data in enumerate(CUSTOM_DATA):
+    #             write(addr, data)
+    #         print("done...")
+    #     case "Write custom data":
+    #         write_answer = inquirer.prompt(asking_to_write)
+    #         print("Writing to", write_answer["addr"], "data", write_answer["data"])
+    #         write(write_answer["addr"], write_answer["data"])
+    #         print("done...")
+    #     case "Back":
+    #         ask_instructions()
 
 
 def init():
     wiringpi.wiringPiSetup()
-    wiringpi.digitalWrite(S_DATA, OUTPUT)
-    wiringpi.digitalWrite(S_SRCLK, OUTPUT)
-    wiringpi.digitalWrite(S_RCLK, OUTPUT)
+    wiringpi.pinMode(S_DATA, OUTPUT)
+    wiringpi.pinMode(S_SRCLK, OUTPUT)
+    wiringpi.pinMode(S_RCLK, OUTPUT)
 
     wiringpi.digitalWrite(E_WE, 1)
-    wiringpi.digitalWrite(E_WE, OUTPUT)
+    wiringpi.pinMode(E_WE, OUTPUT)
 
     ask_instructions()
 
