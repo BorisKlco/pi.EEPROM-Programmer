@@ -25,14 +25,19 @@ S_SRCLK = 14
 
 def setAddr(addr, enableOutput):
     ##Set OE on EEPROM - Active Low
-    wiringpi.pinMode(E_OE, enableOutput)
+    wiringpi.pinMode(E_OE, OUTPUT)
+    wiringpi.digitalWrite(E_OE, enableOutput)
     ##Shift data - Data, Clock, MSBFIRST, ADDR
     wiringpi.shiftOut(S_DATA, S_SRCLK, 1, (addr >> 8))
     wiringpi.shiftOut(S_DATA, S_SRCLK, 1, (addr & 255))
     ##Save data to storage  register
+    time.sleep(0.01)
     wiringpi.digitalWrite(S_RCLK, 0)
+    time.sleep(0.01)
     wiringpi.digitalWrite(S_RCLK, 1)
+    time.sleep(0.01)
     wiringpi.digitalWrite(S_RCLK, 0)
+    time.sleep(0.01)
 
 
 def read(addr):
@@ -42,56 +47,58 @@ def read(addr):
     data = 0
     for pin in reversed(E_DATA):
         data = (data << 1) + wiringpi.digitalRead(pin)
-    time.sleep(0.01)
+    time.sleep(0.02)
     return data
 
 
-def write(addr, data):
+def write(addr, data_input):
     setAddr(int(addr), 1)
+    data = int(data_input)
     for pin in E_DATA:
         wiringpi.pinMode(pin, OUTPUT)
     for pin in E_DATA:
         wiringpi.digitalWrite(pin, data & 1)
         data = data >> 1
+    time.sleep(0.02)
 
     wiringpi.digitalWrite(E_WE, 0)
-    time.sleep(0.001)
-    wiringpi.digitalWrite(E_WE, 1)
     time.sleep(0.01)
+    wiringpi.digitalWrite(E_WE, 1)
+    time.sleep(0.02)
 
 
 def printEE(sectors=1):
-    for sector in range(sectors):
+    for sector in range(int(sectors)):
         from_sector = 256 * sector
         to_sector = 256 * (sector + 1)
         print("Sector:", from_sector, "to", to_sector)
         for base in range(256 * sector, 256 * (sector + 1), 16):
             data = [0] * 16
             for offset in range(16):
-                data[offset] = read(base+offset)
-                buf = (
-                    "%03x: %02x %02x %02x %02x %02x %02x %02x %02x   %02x %02x %02x %02x %02x %02x %02x %02x"
-                    % (
-                        base,
-                        data[0],
-                        data[1],
-                        data[2],
-                        data[3],
-                        data[4],
-                        data[5],
-                        data[6],
-                        data[7],
-                        data[8],
-                        data[9],
-                        data[10],
-                        data[11],
-                        data[12],
-                        data[13],
-                        data[14],
-                        data[15],
-                    )
+                data[offset] = read(base + offset)
+            buf = (
+                "%03x: %02x %02x %02x %02x %02x %02x %02x %02x   %02x %02x %02x %02x %02x %02x %02x %02x"
+                % (
+                    base,
+                    data[0],
+                    data[1],
+                    data[2],
+                    data[3],
+                    data[4],
+                    data[5],
+                    data[6],
+                    data[7],
+                    data[8],
+                    data[9],
+                    data[10],
+                    data[11],
+                    data[12],
+                    data[13],
+                    data[14],
+                    data[15],
                 )
-                print(buf)
+            )
+            print(buf)
 
 
 def multiplexed():
@@ -195,7 +202,9 @@ def ask_read_instructions():
         print("done...")
     elif read_picking == "Read sector":
         read_sector_answer = inquirer.prompt(asking_sectors)
-        printEE(read_sector_answer["sectors"])
+        printEE(
+            1 if read_sector_answer["sectors"] == "" else read_sector_answer["sectors"]
+        )
         print("done...")
     elif read_picking == "Read All":
         print("Reading EEPROM....")
@@ -277,8 +286,8 @@ def init():
     wiringpi.pinMode(S_SRCLK, OUTPUT)
     wiringpi.pinMode(S_RCLK, OUTPUT)
 
-    wiringpi.digitalWrite(E_WE, 1)
     wiringpi.pinMode(E_WE, OUTPUT)
+    wiringpi.digitalWrite(E_WE, 1)
 
     ask_instructions()
 
