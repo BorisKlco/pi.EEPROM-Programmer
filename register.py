@@ -93,17 +93,52 @@ def printEE(sectors=1):
                 print(buf)
 
 
+def multiplexed():
+    digits = [0x7E, 0x30, 0x6D, 0x79, 0x33, 0x5B, 0x5F, 0x70, 0x7F, 0x7B]
+
+    print("Ones place")
+    for i in range(256):
+        write(i, digits[i % 10])
+    print("Tens place")
+    for i in range(256):
+        write(i + 256, digits[(i // 10) % 10])
+    print("Hundreds place")
+    for i in range(256):
+        write(i + 512, digits[(i // 100) % 10])
+    print("Sign place")
+    for i in range(256):
+        write(i + 768, 0)
+
+    print("Ones place - two complenet")
+    for i in range(-128, 128):
+        write(i + 128 + 1024, digits[abs(i) % 10])
+    print("Tens place - two complenet")
+    for i in range(-128, 128):
+        write(i + 128 + 1280, digits[abs(i // 10) % 10])
+    print("Hundreds place-  two complenet")
+    for i in range(-128, 128):
+        write(i + 128 + 1536, digits[abs(i // 100) % 10])
+    print("Sign place - two complenet")
+    for i in range(-128, 128):
+        if i < 0:
+            write(i + 128 + 1792, 0x01)
+        else:
+            write(i + 128 + 1792, 0x00)
+
+
 def ask_instructions():
     begin_instructions = [
         inquirer.List(
             "begin",
             message="EEPROM Programmer",
-            choices=["Read", "Write", "Erase", "Quit"],
+            choices=["Predefined", "Read", "Write", "Erase", "Quit"],
         ),
     ]
     instructions = inquirer.prompt(begin_instructions)
 
     match instructions["begin"]:
+        case "Predefined":
+            multiplexed()
         case "Read":
             ask_read_instructions()
         case "Write":
@@ -159,7 +194,7 @@ def ask_write_instructions():
         inquirer.List(
             "picking_write",
             message="Writing",
-            choices=["Predefine data", "Write custom data", "Back"],
+            choices=["Predefined data", "Write custom data", "Back"],
         ),
     ]
 
@@ -170,8 +205,8 @@ def ask_write_instructions():
     write_instructions = inquirer.prompt(picking_write)
 
     match write_instructions["picking_write"]:
-        case "Predefine data":
-            print("Writing predefine data...")
+        case "Predefined data":
+            print("Writing predefined data...")
             for addr, data in enumerate(CUSTOM_DATA):
                 write(addr, data)
             print("done...")
