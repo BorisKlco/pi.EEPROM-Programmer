@@ -5,11 +5,11 @@ import time
 # A10-A0 - was build for 28C16 EEPROM with 10 address inputs.
 # by inserting GPIO num for A14-A11 to front of ADDR_PIN[]
 # script should work for bigger 28C models.
-ADDR_PIN = [26, 19, 13, 6, 5, 0, 11, 9, 10, 22]
+ADDR_PIN = [27, 22, 10, 9, 11, 0, 5, 6, 13, 19, 26]
 EEPROM_SIZE = len(ADDR_PIN)
 # -------
 # D7-D0 (I/O)
-DATA_PIN = [21, 20, 16, 12, 1, 7, 8, 25]
+DATA_PIN = [25, 8, 7, 1, 12, 16, 20, 21]
 # -------
 WE = 2
 OE = 3
@@ -117,7 +117,7 @@ def write(addr, data):
 # --------May the Force be with you------#
 # ---- Ben Eater Our Lord and Savior 🙏--#
 def printContents():
-    for base in range(0, 2048, 16):
+    for base in range(1024, 2048, 16):
         data = [0] * 16
         for offset in range(0, 16):
             result = read(base + offset)
@@ -162,10 +162,6 @@ def prog(start_addr):
 # --------May the Force be with you------#
 # ---- Ben Eater Our Lord and Savior 🙏--#
 
-# prog(0)
-# printContents()
-
-
 def multiplexed():
     digits = [0x7E, 0x30, 0x6D, 0x79, 0x33, 0x5B, 0x5F, 0x70, 0x7F, 0x7B]
 
@@ -184,26 +180,29 @@ def multiplexed():
 
     print("Ones place - two complenet")
     for i in range(-128, 128):
-        write(i + 128 + 1024, digits[abs(i) % 10])
+        write((i & 0xFF)  + 1024, digits[abs(i) % 10])
     print("Tens place - two complenet")
     for i in range(-128, 128):
-        write(i + 128 + 1280, digits[abs(i // 10) % 10])
+        write((i & 0xFF)  + 1280, digits[(abs(i) // 10) % 10])
     print("Hundreds place-  two complenet")
     for i in range(-128, 128):
-        write(i + 128 + 1536, digits[abs(i // 100) % 10])
+        write((i & 0xFF)  + 1536, digits[(abs(i) // 100) % 10])
     print("Sign place - two complenet")
     for i in range(-128, 128):
         if i < 0:
-            write(i + 128 + 1792, 0x01)
+            write((i & 0xFF) + 1792, 0x01)
         else:
-            write(i + 128 + 1792, 0x00)
+            write((i & 0xFF)  + 1792, 0x00)
 
 
-printContents()
-# multiplexed()
+def erase():
+    for i in range(256):
+        write(i, 0xFF)
 
-# for i in range(2048):
-#     write(i, 0xFF)
+#prog(0)
+multiplexed()
+# printContents()
+
 
 # ---🧹---#
 GPIO.cleanup()
