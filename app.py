@@ -5,6 +5,7 @@ import time
 # A10-A0 - was build for 28C16 EEPROM with 10 address inputs.
 # by inserting GPIO num for A14-A11 to front of ADDR_PIN[]
 # script should work for bigger 28C models.
+EEPROM_28C16 = True
 ADDR_PIN = [27, 22, 10, 9, 11, 0, 5, 6, 13, 19, 26]
 EEPROM_SIZE = len(ADDR_PIN)
 # -------
@@ -14,24 +15,8 @@ DATA_PIN = [25, 8, 7, 1, 12, 16, 20, 21]
 WE = 2
 OE = 3
 # -------
-WRITE_DATA = [
-    0x7E,
-    0x30,
-    0x6D,
-    0x79,
-    0x33,
-    0x5B,
-    0x5F,
-    0x70,
-    0x7F,
-    0x7B,
-    0x77,
-    0x1F,
-    0x4E,
-    0x3D,
-    0x4F,
-    0x47,
-]
+#Cathode 0-fH
+WRITE_DATA = [0x7E,0x30,0x6D,0x79,0x33,0x5B,0x5F,0x70,0x7F,0x7B,0x77,0x1F,0x4E,0x3D,0x4F,0x47]
 # -------
 GPIO.setmode(GPIO.BCM)
 
@@ -40,9 +25,8 @@ GPIO.setmode(GPIO.BCM)
 # ---- Ben Eater Our Lord and Savior 🙏--#
 
 
-def setAddress(addr):
-    # Pleas dont use negative numbers
-    if addr > 2047:
+def setAddress(addr, EEPROM_28C16):
+    if addr > 2047 and EEPROM_28C16:
         print("\nOverflow of 28C16 memory size, setting 0x7ff\n")
         return [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
     result = []
@@ -56,7 +40,6 @@ def setAddress(addr):
 
 
 def setData(data):
-    # Pleas dont use negative numbers
     if data > 255:
         print("\nOverflow of data size, setting 0xff\n")
         return [1, 1, 1, 1, 1, 1, 1, 1]
@@ -106,10 +89,9 @@ def write(addr, data):
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, BYTE_DATA[i])
 
-    time.sleep(0.001)
+    time.sleep(0.01)
     GPIO.output(WE, 0)
-    # 1k ns
-    time.sleep(0.000001)
+    time.sleep(0.001)
     GPIO.output(WE, 1)
     time.sleep(0.01)
 
@@ -117,7 +99,7 @@ def write(addr, data):
 # --------May the Force be with you------#
 # ---- Ben Eater Our Lord and Savior 🙏--#
 def printContents():
-    for base in range(1024, 2048, 16):
+    for base in range(0, 2048, 16):
         data = [0] * 16
         for offset in range(0, 16):
             result = read(base + offset)
@@ -163,6 +145,7 @@ def prog(start_addr):
 # ---- Ben Eater Our Lord and Savior 🙏--#
 
 def multiplexed():
+    #Cathode 0-9
     digits = [0x7E, 0x30, 0x6D, 0x79, 0x33, 0x5B, 0x5F, 0x70, 0x7F, 0x7B]
 
     print("Ones place")
@@ -178,16 +161,16 @@ def multiplexed():
     for i in range(256):
         write(i + 768, 0)
 
-    print("Ones place - two complenet")
+    print("Ones place - two complement")
     for i in range(-128, 128):
         write((i & 0xFF)  + 1024, digits[abs(i) % 10])
-    print("Tens place - two complenet")
+    print("Tens place - two complement")
     for i in range(-128, 128):
         write((i & 0xFF)  + 1280, digits[(abs(i) // 10) % 10])
-    print("Hundreds place-  two complenet")
+    print("Hundreds place -  two complement")
     for i in range(-128, 128):
         write((i & 0xFF)  + 1536, digits[(abs(i) // 100) % 10])
-    print("Sign place - two complenet")
+    print("Sign place - two complement")
     for i in range(-128, 128):
         if i < 0:
             write((i & 0xFF) + 1792, 0x01)
@@ -200,8 +183,9 @@ def erase():
         write(i, 0xFF)
 
 #prog(0)
-multiplexed()
-# printContents()
+#multiplexed()
+printContents()
+#erase()
 
 
 # ---🧹---#
