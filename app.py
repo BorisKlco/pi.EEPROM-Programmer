@@ -5,7 +5,6 @@ import time
 # A10-A0 - was build for 28C16 EEPROM with 10 address inputs.
 # by inserting GPIO num for A14-A11 to front of ADDR_PIN[]
 # script should work for bigger 28C models.
-EEPROM_28C16 = True
 ADDR_PIN = [27, 22, 10, 9, 11, 0, 5, 6, 13, 19, 26]
 EEPROM_SIZE = len(ADDR_PIN)
 # -------
@@ -25,7 +24,7 @@ GPIO.setmode(GPIO.BCM)
 # ---- Ben Eater Our Lord and Savior 🙏--#
 
 
-def setAddress(addr, EEPROM_28C16):
+def setAddress(addr, EEPROM_28C16=True):
     if addr > 2047 and EEPROM_28C16:
         print("\nOverflow of 28C16 memory size, setting 0x7ff\n")
         return [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
